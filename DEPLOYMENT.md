@@ -1,30 +1,29 @@
 # Deployment guide
 
 Goal: a live, clickable demo — backend + frontend both publicly reachable — for a portfolio
-link. Everything below uses free tiers. Total cost: $0.
+link.
 
-**Why this stack:** the backend needs enough RAM to hold `torch` + `transformers` +
-`sentence-transformers` in memory (the embedding model alone is ~2GB). **Hugging Face Spaces'**
-free CPU tier is built for exactly this kind of workload and is a platform ML recruiters
-recognize on sight — a better signal for this project than a generic host. The frontend is
-static HTML/CSS/JS with no build step, so **GitHub Pages** is the simplest place for it — free,
-and it's the same account you'll want for the source code anyway.
+**Status as actually tested in this project:** Hugging Face Spaces' free tier turned out not to
+work for this backend — see the "What we tried on Hugging Face" section below for the full
+story (kept for context/future reference, not because it's the recommended path). **Google Cloud
+Run** is the primary path now: it has a genuine always-free tier with real CPU/RAM, no
+GPU-decorator gating, and we can reuse the existing root [`Dockerfile`](Dockerfile) unchanged.
+The frontend is static HTML/CSS/JS with no build step, so **GitHub Pages** is the simplest place
+for it.
 
-**Note on Space SDK:** if your Hugging Face account's free tier only offers **Gradio**,
-**Static**, and **ZeroGPU** as Space SDK options (no Docker), use §2 below — it wraps the
-existing FastAPI app under a minimal Gradio page (`app.py` at the repo root), verified working
-locally in this project (real API responses, `/docs`, and the Gradio landing page all confirmed
-through the mounted app). If Docker *is* available on your account, the root [`Dockerfile`](Dockerfile)
-is the cleaner path (rebuilds everything from source at build time); §2a covers that instead.
+## 0. Accounts you'll need
 
-## 0. Accounts you'll need (both free)
-
-1. [github.com](https://github.com) — if you don't already have one
-2. [huggingface.co](https://huggingface.co) — sign up, no payment info required for the free tier
+1. [github.com](https://github.com) — free, if you don't already have one
+2. [console.cloud.google.com](https://console.cloud.google.com) — Google account + a GCP
+   project with billing enabled. **Billing enabled ≠ getting charged** — Cloud Run's always-free
+   tier (2 million requests/month, 360,000 GB-seconds memory, 180,000 vCPU-seconds/month) covers
+   a demo like this comfortably; billing just has to exist as a safety net GCP requires even for
+   free-tier usage. Google may ask for a card for identity verification when creating the billing
+   account — that's Google's requirement, not something specific to this project.
 
 ## 1. Push the source code to GitHub
 
-From this directory:
+*(Already done for this project — see the note in the repo if you're following this guide fresh.)*
 
 ```bash
 git init
@@ -32,8 +31,8 @@ git add .
 git commit -m "Initial commit"
 ```
 
-Then create an empty repo on GitHub (github.com → New repository, don't initialize with a
-README) and follow its instructions to push, roughly:
+Create an empty repo on GitHub (github.com → New repository, don't initialize with a README),
+then:
 
 ```bash
 git remote add origin https://github.com/<your-username>/<repo-name>.git
@@ -41,83 +40,53 @@ git branch -M main
 git push -u origin main
 ```
 
-This repo's `.gitignore` deliberately excludes the trained classifier checkpoint and the
-regulation embeddings (`pytorch_classifier/checkpoints/*/`, `data_pipeline/local_index/`) —
-keeps GitHub lean. §2 below explains why the Hugging Face Space needs those committed
-separately.
+## 2. Deploy the backend to Google Cloud Run
 
-## 2. Deploy the backend to Hugging Face Spaces (Gradio SDK — no Docker needed)
-
-Gradio and Static Spaces run `pip install -r requirements.txt` then `python app.py` — there's
-no build-time shell step like Docker's `RUN`, so the regulation embeddings and trained
-classifier can't be regenerated at build time here. Instead, commit the already-built files
-directly into the Space's own git repo (kept separate from your GitHub repo, which stays lean).
-
-1. On huggingface.co, click **New Space**. Name it (e.g. `ai-compliance-copilot`), SDK:
-   **Gradio**, hardware: the free CPU tier, visibility your choice.
-2. HF Spaces auto-creates that Space's own git repo with a starter `README.md` (with required
-   YAML frontmatter — don't overwrite it and lose the `sdk: gradio` / `app_file: app.py`
-   declaration) and a placeholder `app.py`. Clone it **separately** from your GitHub working
-   directory — trying to push this same folder to two remotes with different `.gitignore` needs
-   gets confusing fast:
+1. Install the `gcloud` CLI: https://cloud.google.com/sdk/docs/install (this is a local install
+   on your machine — not something that can be done from within this chat).
+2. Authenticate and set your project:
    ```bash
-   git clone https://huggingface.co/spaces/<your-username>/ai-compliance-copilot statuta-space
+   gcloud auth login
+   gcloud config set project <your-gcp-project-id>
    ```
-3. Copy the following from this project into `statuta-space/`, **overwriting** the placeholder
-   `app.py` but **keeping** the Space's auto-generated `README.md` as-is (just append your own
-   description below its frontmatter block if you want):
-   ```
-   app.py                                        → overwrite the placeholder
-   requirements.txt                                → the root one (not backend/'s)
-   backend/                                        → whole directory
-   pytorch_classifier/                             → whole directory, INCLUDING checkpoints/
-                                                      and data/labeled_pairs.csv (both gitignored
-                                                      in the main repo — include them here)
-   data_pipeline/                                  → whole directory, INCLUDING local_index/
-                                                      (also gitignored in the main repo)
-   ```
-4. From inside `statuta-space/`:
+3. From this repo's root (where the [`Dockerfile`](Dockerfile) lives):
    ```bash
-   git add .
-   git commit -m "Deploy Statuta backend"
-   git push
+   gcloud run deploy ai-compliance-copilot \
+     --source . \
+     --region us-central1 \
+     --allow-unauthenticated \
+     --memory 4Gi \
+     --timeout 300
    ```
-   The classifier checkpoint (`model.safetensors`, ~440MB) will trigger Hugging Face's
-   automatic Git LFS handling for large files — this is normal and expected on HF (unlike
-   GitHub's stricter free-tier LFS limits, HF's is generous and built for exactly this).
-5. The Space rebuilds (no training/embedding step this time — just installing dependencies and
-   starting `python app.py`, so this should take a few minutes, not 10-20). Once live:
+   `--source .` builds the container via Cloud Build **remotely** — no local Docker daemon
+   needed. `--memory 4Gi` gives enough headroom for `torch` + `transformers` +
+   `sentence-transformers` loaded together; adjust down if you trim the embedding model (see
+   note below). First build takes 10-20 minutes (same reason as the Dockerfile's own comments —
+   it downloads the embedding + classifier models and rebuilds the regulation corpus / retrains
+   the classifier as part of the build).
+4. `gcloud run deploy` prints a service URL when done (something like
+   `https://ai-compliance-copilot-xxxxx-uc.a.run.app`). Confirm with:
    ```bash
-   curl https://<your-username>-ai-compliance-copilot.hf.space/health
+   curl https://<your-service-url>/health
    ```
    should return `{"status":"ok"}`.
 
-## 2a. Alternative: Docker SDK (if available on your account)
-
-1. New Space → SDK: **Docker** → free CPU tier.
-2. Push this whole repo (the one with `.gitignore` as-is — no separate clone needed) to the
-   Space's git remote:
-   ```bash
-   git remote add space https://huggingface.co/spaces/<your-username>/ai-compliance-copilot
-   git push space main
-   ```
-3. HF reads the root [`Dockerfile`](Dockerfile) and builds automatically. **First build takes
-   10-20 minutes** — it downloads the embedding + classifier models and rebuilds the regulation
-   embeddings / retrains the classifier as part of the build, so nothing large needs to be
-   committed to git at all.
-4. This Dockerfile has not been build-tested in this environment (Docker Desktop wasn't running
-   here) — if the build fails, check the HF build log; likely failure points are dependency
-   installs (large downloads occasionally time out — retry) or the embed/train steps (confirmed
-   working when run directly, see `docs/BUILD_PLAN.md`).
+**If you want to shrink the memory footprint** (e.g. to stay further inside the free tier's
+GB-seconds budget, or if 4Gi ever isn't enough): swap `intfloat/multilingual-e5-large` for
+`intfloat/multilingual-e5-small` in `backend/app/core/config.py`'s `embedding_model` default —
+untested in this project (the large model is what was actually verified working throughout),
+but it's the same embedding family at a fraction of the size, and would need
+`data_pipeline/chunk_and_embed.py` re-run once against the new model before redeploying, since
+embeddings from different models aren't interchangeable.
 
 ## 3. Deploy the frontend to GitHub Pages
 
-1. Edit [`webapp/js/config.js`](webapp/js/config.js) in your **GitHub** repo (not the Space
-   clone) — change the URL to your Space's URL from step 2:
+1. Edit [`webapp/js/config.js`](webapp/js/config.js) — change the URL to your Cloud Run service
+   URL from step 2:
    ```js
-   window.STATUTA_API_BASE = "https://<your-username>-ai-compliance-copilot.hf.space";
+   window.STATUTA_API_BASE = "https://<your-service-url>";
    ```
-2. Commit and push that change to GitHub.
+2. Commit and push that change.
 3. On GitHub: repo → **Settings → Pages** → Source: **Deploy from a branch** → Branch: `main`,
    folder: `/webapp` (if GitHub Pages doesn't offer a subfolder picker in your account, see the
    note below).
@@ -138,17 +107,42 @@ but tighten it to your actual GitHub Pages URL once both are live if you want to
 allow_origins=["https://<your-username>.github.io"],
 ```
 
+## What we tried on Hugging Face Spaces (kept for reference)
+
+This project's free HF account only offers **Gradio**, **Static**, and **ZeroGPU** as Space
+options — no Docker, and switching an existing Space to **CPU basic** hardware is blocked
+outright without a PRO subscription (`"Without a PRO subscription, you can't downgrade this
+Space to cpu-basic"`). That leaves ZeroGPU as the only free hardware tier, which requires at
+least one `@spaces.GPU`-decorated function to exist and be detected at startup — a real
+requirement even for an app that has no actual GPU workload.
+
+We got as far as:
+- [`app.py`](app.py) mounting the existing FastAPI app under a Gradio page, verified working
+  locally (real `/api/chat` responses, `/docs`, `/ui/` all returned 200)
+- Found and fixed a real `gradio 4.44.1` / `starlette 1.x` incompatibility along the way
+  (`TypeError: unhashable type: 'dict'` rendering the Gradio UI page — fixed by pinning
+  `starlette<1.0` in `requirements.txt`)
+- Two different attempts at satisfying ZeroGPU's `@spaces.GPU` detection (a bare decorated
+  function, then wiring it into a `demo.load` event) both failed with the identical error
+  `"No @spaces.GPU function detected during startup"`, and the Space's own runtime status showed
+  `"hardware":{"current":null}` — hardware was never actually allocated to the container
+
+That last point suggests the blocker sits below the application code, in how this specific free
+account's ZeroGPU allocation behaves — not something fixable by changing `app.py` further. If
+Hugging Face's free-tier offering changes later (or a PRO subscription is added), `app.py` and
+the root `Dockerfile` are both already written and tested locally; only the actual push +
+account-side hardware selection would need retrying.
+
 ## What's NOT handled by this guide
 
 - **Auth** — there is none. Anyone with the URL can upload documents and generate reports under
   the shared `demo-user` ID the frontend currently hardcodes. Fine for a portfolio demo, not for
   real use.
 - **Persistence across redeploys** — the local JSON store (uploaded documents, generated
-  reports) lives inside the Space's container filesystem. Free-tier Spaces don't guarantee
-  that survives a sleep/restart cycle, so documents uploaded via the live demo may disappear
-  after inactivity. The regulation corpus and classifier don't, since they're committed/rebuilt
-  as part of the deploy either way.
+  reports) lives inside the Cloud Run container's filesystem, which is ephemeral per instance.
+  Documents uploaded via the live demo may disappear when Cloud Run scales an instance down. The
+  regulation corpus and classifier don't, since they're rebuilt from source on every deploy.
 - **A real Supabase project** — if you want persistent, multi-user storage instead of the demo
   local store, follow `supabase/schema.sql` and set `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY`
-  as secrets in the HF Space's settings (Settings → Variables and secrets) instead of committing
-  them to `.env`.
+  as Cloud Run environment variables/secrets (`gcloud run services update ... --set-secrets`)
+  instead of committing them to `.env`.
