@@ -1,0 +1,4 @@
+regulation,article,clause_text,company_profile_text,label
+AI Act,Article 6(2) / Annex III,"An AI system shall be considered high-risk where it is used for biometric identification and categorisation of natural persons.","Mid-size logistics software firm (45 employees) using an AI route-optimization model. No biometric or identification systems.",not_applicable
+AI Act,Article 9,"Providers of high-risk AI systems shall establish, implement, document and maintain a risk management system.","Mid-size logistics software firm (45 employees) using an AI route-optimization model classified as high-risk under Annex III.",applicable
+NIS2,Article 21,"Essential and important entities shall take appropriate technical and organisational measures to manage risks posed to network and information systems.","Manufacturing SME with third-party IoT vendors integrated into production line monitoring.",needs_human_review

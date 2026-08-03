@@ -1,0 +1,9 @@
+torch>=2.3
+# pinned <5: transformers 5.14.1 fails to fetch a usable tokenizer for deepset/gbert-base
+# (only config.json + tokenizer_config.json get downloaded, no vocab file) — revisit once fixed upstream
+transformers>=4.44,<5
+datasets>=2.20
+scikit-learn>=1.5
+pandas>=2.2
+matplotlib>=3.9
+sentencepiece>=0.2

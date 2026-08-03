@@ -1,0 +1,52 @@
+[
+  {
+    "name": "RouteWise Logistics Software GmbH",
+    "sector": "Logistics software",
+    "employee_count": 45,
+    "uses_ai_systems": true,
+    "ai_system_descriptions": [
+      "Machine-learning route optimization engine used by dispatch to assign delivery routes",
+      "Demand-forecasting model for warehouse stock levels"
+    ],
+    "third_party_vendors": ["AWS (hosting)", "Twilio (SMS notifications)"],
+    "notes": "No biometric or law-enforcement use cases. Considering whether route optimization for third-party logistics clients counts as high-risk under Annex III."
+  },
+  {
+    "name": "Nordkette Präzisionsteile GmbH",
+    "sector": "Precision manufacturing",
+    "employee_count": 180,
+    "uses_ai_systems": true,
+    "ai_system_descriptions": [
+      "Computer-vision defect detection on the production line"
+    ],
+    "third_party_vendors": [
+      "Third-party IoT sensor platform (production line monitoring)",
+      "Managed SCADA vendor"
+    ],
+    "notes": "Recently onboarded IoT vendor without a formal security review — NIS2 essential-entity status unclear."
+  },
+  {
+    "name": "Feldgrün Agrar-Consulting UG",
+    "sector": "Agricultural consulting",
+    "employee_count": 12,
+    "uses_ai_systems": false,
+    "ai_system_descriptions": [],
+    "third_party_vendors": ["Local accounting software vendor"],
+    "notes": "No in-house AI systems, but evaluating an off-the-shelf crop-yield prediction SaaS tool. CSRD likely not directly applicable given size, but a large customer is asking for sustainability data as part of their value-chain reporting."
+  },
+  {
+    "name": "Baumann Energie- und Gebäudetechnik AG",
+    "sector": "Building energy management",
+    "employee_count": 310,
+    "uses_ai_systems": true,
+    "ai_system_descriptions": [
+      "Predictive maintenance model for HVAC systems in client buildings",
+      "Energy consumption anomaly detection"
+    ],
+    "third_party_vendors": [
+      "Cloud IoT platform vendor",
+      "External payroll processor"
+    ],
+    "notes": "Above the CSRD employee threshold — full sustainability reporting likely applies. Also a NIS2 'important entity' candidate given building management systems."
+  }
+]

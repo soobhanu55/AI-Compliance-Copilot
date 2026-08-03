@@ -1,0 +1,7 @@
+streamlit>=1.38
+streamlit-shadcn-ui>=0.1.18
+streamlit-extras>=0.4
+streamlit-option-menu>=0.3
+plotly>=5.24
+requests>=2.32
+python-dotenv>=1.0

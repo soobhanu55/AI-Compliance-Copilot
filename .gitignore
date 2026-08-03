@@ -1,0 +1,25 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+*.egg-info/
+.pytest_cache/
+
+# data — *_articles.json (structured regulation text) is committed on purpose;
+# re-fetching requires a real browser session since EUR-Lex blocks scripted HTTP fetches
+data_pipeline/regulations/*.pdf
+data_pipeline/regulations/*.txt
+data_pipeline/local_index/
+
+# trained-model weights are rebuilt at Docker build time (see ../Dockerfile) rather than
+# committed — keeps the git repo free of large binaries. confusion_matrix.png stays tracked:
+# it's small and the model card links to it as evidence of a real training run.
+pytorch_classifier/checkpoints/*/
+pytorch_classifier/data/labeled_pairs.csv
+
+# streamlit
+.streamlit/secrets.toml
+
+# OS
+.DS_Store
+Thumbs.db
