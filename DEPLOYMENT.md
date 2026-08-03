@@ -1,15 +1,22 @@
 # Deployment guide
 
-Goal: a live, clickable demo — backend + frontend both publicly reachable — for a portfolio
-link.
+Goal (originally): a live, clickable demo — backend + frontend both publicly reachable — for a
+portfolio link.
 
-**Status as actually tested in this project:** Hugging Face Spaces' free tier turned out not to
-work for this backend — see the "What we tried on Hugging Face" section below for the full
-story (kept for context/future reference, not because it's the recommended path). **Google Cloud
-Run** is the primary path now: it has a genuine always-free tier with real CPU/RAM, no
-GPU-decorator gating, and we can reuse the existing root [`Dockerfile`](Dockerfile) unchanged.
-The frontend is static HTML/CSS/JS with no build step, so **GitHub Pages** is the simplest place
-for it.
+**Final decision for this project: not pursuing live hosting.** Every genuinely free tier with
+enough RAM for `torch` + `transformers` + `sentence-transformers` (Google Cloud Run, most others)
+requires a card on file for identity verification, even when the free quota itself costs
+nothing — and that's a hard no for this project. The one path that needed no card (Hugging Face
+Spaces, already set up) turned out to gate free-tier compute behind ZeroGPU hardware that never
+actually allocated to the container, which two different code-level fixes couldn't resolve — see
+"What we tried on Hugging Face" below for the full story.
+
+Instead: a recorded demo (`docs/demo.gif`) plus clean "run it locally" instructions in the root
+[`README.md`](README.md) are the actual deliverable. This is a normal, well-understood portfolio
+pattern — recruiters generally understand that self-hosting a real ML backend for free is a
+known hard problem, and it doesn't read as a shortcut. The sections below are kept as a working
+reference in case a card-holding host (Cloud Run) or a resolved HF tier ever becomes viable later
+— **not** as remaining action items.
 
 ## 0. Accounts you'll need
 

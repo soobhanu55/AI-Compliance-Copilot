@@ -286,7 +286,7 @@ export function renderDocuments(state) {
       const stages = ["Parsing", "Chunking", "Embedding", "Classifying"];
       const bars = stages
         .map((label, i) => {
-          const active = d.stage === i && d.status !== "error";
+          const active = d.stage === i && d.status === "in_progress";
           return `
             <div class="pipeline-step">
               <div class="pipeline-bar ${active ? "active" : ""}"><span style="width:${stageWidth(i)}%;"></span></div>

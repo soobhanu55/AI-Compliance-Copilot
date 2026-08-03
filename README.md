@@ -22,12 +22,21 @@ AI system descriptions, existing certifications) plus the relevant regulation te
 
 It is a RAG + light fine-tuning + agentic drafting project, not a plain chatbot.
 
+## Demo
+
+![Demo](docs/demo.gif)
+
+No live-hosted version — every free tier with enough RAM for `torch` + `transformers` requires
+a card for identity verification, which this project deliberately avoids requiring. See
+[`DEPLOYMENT.md`](DEPLOYMENT.md) for the full story (including a Hugging Face Spaces attempt
+that hit a genuine platform wall) and how to run it locally in under 5 minutes — see Setup below.
+
 ## Status
 
 Weeks 1–3 of the build plan are functionally complete and verified end-to-end against real
-data (real regulation text, a trained classifier, a live frontend). Live hosting/deployment is
-the one open item. See [`docs/BUILD_PLAN.md`](docs/BUILD_PLAN.md) for the full week-by-week
-log and component status table.
+data (real regulation text, a trained classifier, a live frontend, all confirmed working in an
+actual browser against the real backend — not mocked). See [`docs/BUILD_PLAN.md`](docs/BUILD_PLAN.md)
+for the full week-by-week log and component status table.
 
 ## Architecture
 
