@@ -1,0 +1,25 @@
+# Root requirements.txt — used only when deploying app.py to a Hugging Face Space (Gradio SDK).
+# Mirrors backend/requirements.txt plus gradio itself; local development should keep using
+# backend/requirements.txt and pytorch_classifier/requirements.txt directly (see README.md).
+
+fastapi>=0.115
+uvicorn[standard]>=0.30
+pydantic>=2.8
+pydantic-settings>=2.4
+supabase>=2.7
+sentence-transformers>=3.0
+unstructured[pdf,docx]>=0.15
+pymupdf>=1.24
+python-docx>=1.1
+python-multipart>=0.0.9
+tiktoken>=0.7
+
+torch>=2.3
+transformers>=4.44,<5
+sentencepiece>=0.2
+
+# pinned <5: gradio 5+/6+ requires huggingface-hub>=1.16, which conflicts with the
+# huggingface-hub<1.0 that transformers<5 requires. gradio 4.x + huggingface-hub<1.0 is the
+# combination actually verified working together in this project (see DEPLOYMENT.md).
+gradio>=4.44,<5
+huggingface-hub>=0.23.2,<1.0
