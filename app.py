@@ -19,8 +19,17 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent / "backend"))
 
 import gradio as gr
+import spaces
 
 from app.main import app as fastapi_app  # noqa: E402  (path insert must happen first)
+
+
+@spaces.GPU
+def _zerogpu_placeholder():
+    """Satisfies the ZeroGPU Space runtime's requirement that at least one @spaces.GPU
+    function exists at startup. This project's workload (embeddings + a small BERT
+    classifier) is CPU-only by design — this function is never called."""
+    return None
 
 with gr.Blocks(title="AI Compliance Copilot") as demo:
     gr.Markdown(

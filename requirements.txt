@@ -23,3 +23,6 @@ sentencepiece>=0.2
 # combination actually verified working together in this project (see DEPLOYMENT.md).
 gradio>=4.44,<5
 huggingface-hub>=0.23.2,<1.0
+
+# required for the ZeroGPU Space runtime's @spaces.GPU startup check — see app.py
+spaces
