@@ -24,5 +24,10 @@ sentencepiece>=0.2
 gradio>=4.44,<5
 huggingface-hub>=0.23.2,<1.0
 
+# pinned <1.0: gradio 4.44.1 predates starlette 1.x and its Jinja2Templates caching breaks
+# under it (TypeError: unhashable type: 'dict' rendering the Gradio UI page) — verified by
+# actually hitting /ui/ locally, not assumed from a changelog.
+starlette>=0.37,<1.0
+
 # required for the ZeroGPU Space runtime's @spaces.GPU startup check — see app.py
 spaces

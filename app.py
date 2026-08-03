@@ -28,8 +28,10 @@ from app.main import app as fastapi_app  # noqa: E402  (path insert must happen 
 def _zerogpu_placeholder():
     """Satisfies the ZeroGPU Space runtime's requirement that at least one @spaces.GPU
     function exists at startup. This project's workload (embeddings + a small BERT
-    classifier) is CPU-only by design — this function is never called."""
-    return None
+    classifier) is CPU-only by design — this never does real work. A bare decorated
+    function isn't enough for ZeroGPU's detector to find it; it has to be wired into an
+    actual Gradio event (demo.load below), not just defined."""
+    return ""
 
 with gr.Blocks(title="AI Compliance Copilot") as demo:
     gr.Markdown(
@@ -43,6 +45,7 @@ with gr.Blocks(title="AI Compliance Copilot") as demo:
         - Health check: [`/health`](/health)
         """
     )
+    demo.load(_zerogpu_placeholder, inputs=None, outputs=None)
 
 app = gr.mount_gradio_app(fastapi_app, demo, path="/ui")
 
